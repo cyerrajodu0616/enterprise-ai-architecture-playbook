@@ -184,28 +184,101 @@ Before an interview, design review, or client discussion, map the playbook’s d
 
 The objective is not to memorize the HealthSure solution. The objective is to learn how to adapt the reasoning.
 
+## What to Expect During the Next Two Months
+
+The [eight-week bootcamp](bootcamp/README.md) follows the capability sequence in [`ROADMAP.md`](ROADMAP.md). Each week advances the same HealthSure architecture so assumptions, trade-offs, cost, operating responsibility, and recommendation-change triggers remain visible.
+
+### Week 1 — Knowledge Systems
+
+- **Architectural capability:** Design how an AI system finds and uses enterprise knowledge.
+- **Major business questions:** What must service agents know, which source is authoritative, how accurate and explainable must answers be, and is retrieval more valuable than simpler context or search?
+- **HealthSure evolution:** Establish an internal policy knowledge assistant that grounds answers in governing policy language.
+- **Expected outputs:** Retrieval ADRs, an evaluation plan, knowledge-domain model, cheat sheet, and initial architecture diagram.
+
+### Week 2 — AI-Ready Data Foundations
+
+- **Architectural capability:** Make enterprise data trustworthy, accessible, governed, and reproducible for AI workloads.
+- **Major business questions:** Which data is authoritative, how fresh must it be, who owns its quality, and when do batch, streaming, structured access, or document search create sufficient value?
+- **HealthSure evolution:** Connect policy knowledge to changing policy, claims, customer, provider, and product data without weakening lineage or ownership.
+- **Expected outputs:** Data-domain map, source-of-truth and access ADRs, lineage design, and an updated HealthSure architecture.
+
+### Week 3 — Enterprise AI Platform
+
+- **Architectural capability:** Define shared platform capabilities and product-team boundaries.
+- **Major business questions:** What should be standardized, what should remain domain-owned, how can teams move independently, and how should cost, quotas, governance, and providers be managed?
+- **HealthSure evolution:** Support multiple business assistants through justified shared capabilities rather than duplicated or over-centralized platforms.
+- **Expected outputs:** Platform-boundary ADRs, capability map, responsibility matrix, API boundary diagram, and architecture update.
+
+### Week 4 — Models, Context, Tools, and Workflows
+
+- **Architectural capability:** Select the simplest safe execution mechanism for each task.
+- **Major business questions:** When should the system use context, retrieval, SQL, APIs, deterministic code, model reasoning, or human approval, and which model is sufficient?
+- **HealthSure evolution:** Extend the assistant from policy answers to authoritative lookups, comparisons, calculations, and approved workflow initiation.
+- **Expected outputs:** Model-routing and execution ADRs, task decision tree, failure analysis, cheat sheet, and architecture update.
+
+### Week 5 — Agents and Business Workflows
+
+- **Architectural capability:** Decide when bounded autonomous behavior is justified and operable.
+- **Major business questions:** Does the process need dynamic planning, which actions require approval, and how will state, permissions, retries, idempotency, audit, recovery, and shutdown work?
+- **HealthSure evolution:** Explore controlled automation for claim-document collection, research, summarization, and selected follow-ups.
+- **Expected outputs:** Agent-versus-workflow ADR, permission model, state-machine diagram, approval policy, evaluation plan, and architecture update.
+
+### Week 6 — Governance, Security, Evaluation, and Observability
+
+- **Architectural capability:** Make enterprise AI trustworthy, measurable, secure, and controllable.
+- **Major business questions:** Where is authorization enforced, which evidence permits release, how is sensitive data protected, what is observed safely, and who owns failures and incidents?
+- **HealthSure evolution:** Add layered controls and evidence for regulated data, grounded answers, authorized actions, monitoring, audit, and investigation.
+- **Expected outputs:** Threat model, authorization ADR, evaluation scorecard, observability design, incident runbook, and architecture update.
+
+### Week 7 — Scale, Reliability, and Economics
+
+- **Architectural capability:** Sustain reliability and business value as usage and operating expectations grow.
+- **Major business questions:** What is the unit cost per successful outcome, what breaks first, how should the service degrade, and which availability, recovery, or multi-region investments are justified?
+- **HealthSure evolution:** Prepare selected workloads for broader internal and customer-facing use with evidence-based capacity and resilience decisions.
+- **Expected outputs:** Unit-economics model, resilience and routing ADRs, capacity plan, degradation strategy, recovery design, and architecture update.
+
+### Week 8 — Integrated Enterprise Architecture
+
+- **Architectural capability:** Synthesize, communicate, sequence, and adapt the complete enterprise architecture.
+- **Major business questions:** Which decisions remain valid, what should be built, bought, deferred, removed, or rejected, and how should risk, cost, migration, and investment be explained?
+- **HealthSure evolution:** Present a coherent phased architecture for executive, security, operational, and investment review.
+- **Expected outputs:** Final architecture and narrative, executive memo, consolidated ADR index, risk register, cost model, migration roadmap, cross-domain comparison, and portfolio plan.
+
+## Daily Working Pattern
+
+Every daily lesson normally produces:
+
+1. detailed HTML lesson;
+2. Architecture Decision Record;
+3. five-minute cheat sheet;
+4. HealthSure case-study update;
+5. system design or decision diagram when useful;
+6. Architect’s Challenge;
+7. open questions;
+8. Architect’s Reflection.
+
+Daily folders are created only when a lesson begins. This avoids speculative placeholders and lets templates and structures evolve from actual learning needs.
+
 ## Repository Map
 
 ```text
 enterprise-ai-architecture-playbook/
-│
 ├── README.md
 ├── ARCHITECTURE_MANIFESTO.md
 ├── PLAYBOOK_GUIDELINES.md
 ├── ROADMAP.md
-├── LEARNING_PHILOSOPHY.md
-├── ARCHITECTURAL_PRINCIPLES.md
-├── DECISION_FRAMEWORK.md
-├── CONTRIBUTING.md
-│
+├── FOUNDATION_VALIDATION.md
 ├── bootcamp/
-│   ├── week01/
-│   ├── week02/
-│   └── ...
-│
+│   ├── week01-knowledge-systems/
+│   ├── week02-ai-ready-data/
+│   ├── week03-ai-platform/
+│   ├── week04-model-context-tools/
+│   ├── week05-agents-workflows/
+│   ├── week06-governance-observability/
+│   ├── week07-scale-reliability-economics/
+│   └── week08-enterprise-architecture/
 ├── case-studies/
-│   └── HealthSure/
-│
+│   └── healthsure/
 ├── adr/
 ├── cheatsheets/
 ├── system-designs/
