@@ -3,76 +3,31 @@
 ## Program Position
 
 - Week: 1
-- Day: 1 completed; Day 2 next
-- Topic completed: How Should an AI System Access Enterprise Knowledge?
-- Next topic: Long Context vs Retrieval
-- Status: Day 1 reasoning consolidated; architecture decision deferred pending evidence
+- Day: 1 completed
+- Next: Day 2 — Long Context vs Retrieval
 
-## What Was Learned
+## Reasoning Shifts
 
-- Start from the business question and authoritative facts, not from RAG.
-- Separate policy knowledge from member-specific operational state.
-- Structured changing facts usually belong behind authoritative SQL/API access rather than embeddings.
-- Policy retrieval must respect authority, version, effective date, and access boundaries.
-- Direct context, lexical search, semantic retrieval, and hybrid retrieval should be selected only when they earn their complexity.
-- Deterministic systems should establish facts, scope, and calculations; the LLM should synthesize and explain.
-- Freshness is fact-specific, not one global AI requirement.
-- Diagnose latency before adding caches, replicas, or serving stores.
-- Response latency and replication lag are different dimensions.
-- Fallback to a primary system can create cascading load and must be designed deliberately.
+- Moved from “search vs vector DB” to “fact → authority → freshness → risk → access mechanism.”
+- Challenged the assumption that all AI data belongs in one vector store.
+- Corrected the comparison between response latency and replication lag.
+- Established that stale-fast vs authoritative-slow behavior must be governed by business risk.
+- Identified fallback storms as an operational risk.
 
-## Decisions Made
+## Decisions
 
-No final architecture decision was accepted.
-
-Current position:
-- Do not assume a vector database or RAG.
-- Do not use a vector database as the canonical store for live structured operational state.
-- Preserve authoritative source boundaries.
-- Defer long-context-versus-retrieval until corpus, query, cost, latency, authorization, and quality evidence is available.
-
-## Assumptions
-
-No hypothetical lesson numbers were promoted to HealthSure facts.
-
-## Open Questions
-
-- Agent question categories and frequencies
-- Authoritative source per fact
-- Policy version/effective-date semantics
-- Freshness per fact type
-- Latency per question class
-- Consequence of stale or incorrect answers
-- Authorization boundaries
-- Source-system capacity and query limits
-- Policy corpus size and structure
-- Evaluation methodology and acceptance criteria
-
-## HealthSure Changes
-
-No production component was added.
-
-The case-study model now explicitly distinguishes:
-- governing policy knowledge;
-- member/claim operational state;
-- deterministic calculations;
-- LLM explanation/synthesis.
+No final long-context-vs-retrieval decision accepted.
 
 ## Artifacts
 
-- Day 1 lesson notes prepared
-- Open questions prepared
-- HealthSure state update prepared
-- ADR intentionally deferred
+- detailed HTML lesson with Architecture Reasoning Journal;
+- Proposed ADR;
+- cheat sheet;
+- HealthSure update;
+- Architect's Challenge;
+- open questions;
+- Architect's Reflection.
 
-## Recommended Next Topic
+## Next Topic
 
 Day 2 — Long Context vs Retrieval
-
-Architectural question:
-
-> When does retrieval provide enough value to justify an additional subsystem compared with supplying the necessary context directly to the model?
-
-## Last Updated
-
-2026-08-08
