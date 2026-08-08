@@ -1,0 +1,266 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Enterprise AI Architecture Playbook Week 1 Day 2 lesson"><title>Day 2 — Long Context vs Retrieval</title><style>:root{color-scheme:light;--ink:#162033;--line:#d8e0ec;--blue:#174ea6;--soft:#eef5ff;--paper:#fff}*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1040px;margin:32px auto;padding:48px 64px;background:var(--paper);box-shadow:0 10px 35px rgba(22,32,51,.09);border-radius:18px}h1{font-size:2.45rem;line-height:1.12;margin-top:0}h2{font-size:1.55rem;margin-top:2.4rem;padding-top:.65rem;border-top:1px solid var(--line)}h3{font-size:1.18rem;margin-top:1.7rem}h1,h2,h3{color:#112b52}p,li{max-width:82ch}blockquote{margin:1.4rem 0;padding:1rem 1.25rem;background:var(--soft);border-left:5px solid var(--blue);border-radius:0 10px 10px 0}pre{overflow:auto;padding:1rem 1.2rem;background:#101827;color:#e8eef8;border-radius:10px}code{font-family:"SFMono-Regular",Consolas,monospace}table{border-collapse:collapse;width:100%;display:block;overflow:auto}th,td{padding:.65rem;border:1px solid var(--line);text-align:left;vertical-align:top}a{color:var(--blue)}hr{border:0;border-top:1px solid var(--line);margin:2rem 0}@media(max-width:720px){main{margin:0;padding:26px 20px;border-radius:0}h1{font-size:2rem}h2{font-size:1.35rem}}@media print{body{background:#fff}main{box-shadow:none;margin:0;max-width:none}}</style></head><body><main><h1>Day 2 — Long Context vs Retrieval</h1>
+<h2>Status</h2>
+<p>Lesson reasoning completed. A qualified-long-context pilot is recorded as Experimental; no production architecture has been accepted.</p>
+<h2>1. Executive Summary</h2>
+<p>HealthSure&#39;s advisory policy assistant must provide service agents with governing policy language while preventing an inapplicable policy version, incomplete policy package, or unsupported model conclusion from becoming a customer-facing answer.</p>
+<p>The architectural tension is whether to supply a complete, deterministically qualified policy package to a long-context model or add ingestion, indexing, filtering, retrieval, and reranking to select passages.</p>
+<p>Under current assumptions, the simplest viable direction is a controlled qualified-long-context pilot. Retrieval remains a credible alternative if measured quality, latency, context capacity, authorization granularity, corpus growth, or total cost demonstrates that its additional subsystem earns its place.</p>
+<p>The strongest counterargument is that long context may consume substantially more tokens, respond more slowly, and overlook evidence within a large package. Retrieval may focus the model and improve unit economics, but it creates a new evidence-omission and historical-version failure surface.</p>
+<h2>2. Business Problem</h2>
+<p>Service agents need timely, understandable answers grounded in the policy package governing a specific business event. The business outcome is not merely an answer: it is a correct, useful advisory response that reduces research effort without increasing correction work, manual review, customer harm, or compliance exposure.</p>
+<p>Known HealthSure facts remain limited:</p>
+<ul>
+<li>the first use case is an internal advisory policy knowledge assistant;</li>
+<li>agents need governing policy language and source traceability;</li>
+<li>source authority, version semantics, authorization, workload, latency, corpus, and evaluation thresholds remain unconfirmed.</li>
+</ul>
+<p>The following were hypothetical learning scenarios, not HealthSure requirements or measurements: 40 documents, 5,000 monthly questions, 8-second p95 latency, 85,000 model-input tokens, evaluation percentages, and pilot-result counts.</p>
+<h2>3. Current State and Trigger</h2>
+<p>Day 1 rejected a universal vector store and separated governing policy knowledge, operational state, deterministic calculation, and LLM explanation. Long context versus retrieval remained deferred.</p>
+<p>Day 2 introduces a bounded decision: if an applicable policy package can be resolved deterministically and fits within usable context, does retrieval deliver enough additional value to justify another subsystem?</p>
+<h2>4. Naive Explanation</h2>
+<p>Long context sends the model the complete qualified evidence. Retrieval searches an indexed corpus and sends only selected evidence.</p>
+<p>Long context can avoid retrieval omission but may cost more and make evidence harder for the model to notice. Retrieval can reduce context and latency but may omit the clause that changes the answer. Neither mechanism establishes which policy governs; that must happen before either one.</p>
+<h2>5. Requirements, Constraints, and Assumptions</h2>
+<h3>Requirements</h3>
+<ul>
+<li>identify the governing policy package before model invocation;</li>
+<li>prevent unauthorized or inapplicable versions from reaching the model;</li>
+<li>preserve amendments, schedules, definitions, exclusions, and precedence;</li>
+<li>cite evidence and abstain when applicability or completeness cannot be established;</li>
+<li>measure correctness, usefulness, latency, and cost as separate properties;</li>
+<li>retain sufficient evidence for investigation and reproduction.</li>
+</ul>
+<h3>Constraints</h3>
+<ul>
+<li>the assistant is advisory and does not replace authoritative systems or accountable human decisions;</li>
+<li>real HealthSure policy semantics and operating thresholds are not yet available;</li>
+<li>added components create security, governance, evaluation, and on-call obligations.</li>
+</ul>
+<h3>Assumptions</h3>
+<ul>
+<li><strong>Assumption:</strong> a bounded applicable policy package can fit in usable model context. Evidence: hypothetical lesson scenario only. Impact if wrong: long context may become infeasible or unreliable. Validation: corpus inventory and representative context measurement.</li>
+<li><strong>Assumption:</strong> deterministic applicability and package completeness can be implemented. Evidence: architectural requirement, not verified HealthSure capability. Impact if wrong: either design can use incorrect evidence. Validation: policy-domain rules and adversarial tests.</li>
+<li><strong>Assumption:</strong> a controlled pilot is reversible and operationally supportable. Evidence: hypothetical scenario only. Impact if wrong: the pilot may create unacceptable risk or burden. Validation: ownership and readiness review.</li>
+</ul>
+<h2>6. Simplest Viable Solution</h2>
+<pre><code class="language-text">Authenticated agent and claim/question context
+        ↓
+Deterministic applicability resolution
+        ↓
+Complete authorized policy-package validation
+        ↓
+Qualified policy context
+        ↓
+Model explanation with citations or abstention
+</code></pre>
+<p>Begin with this qualified-long-context path for a bounded pilot. Do not add ingestion, embeddings, retrieval, or reranking until a measured limitation requires them.</p>
+<h2>7. Technical Deep Dive</h2>
+<h3>Applicability boundary</h3>
+<p>The resolver must establish product, jurisdiction, relevant business or service date, policy version, amendments, schedules, precedence, and authorization. Historical versions are not globally stale; they are applicable or inapplicable for a particular event.</p>
+<pre><code class="language-text">No policy material crosses the model boundary unless:
+product matches
+AND jurisdiction matches
+AND event date falls within applicability
+AND policy-package relationship is valid
+AND package completeness is confirmed
+AND authorization permits access
+</code></pre>
+<p>If a required date is missing, the system should request qualification or abstain. Defaults belong only to explicitly validated and allowlisted date-independent question categories. Uncertain classification takes the more restrictive path.</p>
+<h3>Package assembly</h3>
+<p>An amendment may change one clause without replacing the base policy. A benefits schedule may supply cost-sharing detail absent from both. The assembler must preserve the complete governing meaning rather than assume that the most specific document is sufficient.</p>
+<h3>Claim-scoped execution</h3>
+<p>Capture an immutable request snapshot. If an agent moves from Claim A to Claim B while a request is running, the Claim A result remains bound to Claim A and must not appear as Claim B&#39;s answer. Authorization is revalidated before display.</p>
+<h3>Failure taxonomy</h3>
+<pre><code class="language-text">Materially wrong answer
+├── wrong policy package selected
+├── required evidence absent from context
+├── evidence present but model overlooked it
+├── precedence interpreted incorrectly
+└── unsupported conclusion generated
+</code></pre>
+<p>These failures have different owners and corrective actions. Resolver errors are not repaired by prompting. Missing evidence is not the same as evidence the model failed to use.</p>
+<h3>Request identity and reuse</h3>
+<p>Audit stores, request registries, and caches are distinct responsibilities. In-flight deduplication may use immutable request identity. A completed claim answer must not be reused after an authoritative input changes. Stable policy evidence might eventually be reused, but a dedicated stability/invalidation layer is deferred until recomputation becomes a measured business problem.</p>
+<h2>8. Architecture Options</h2>
+<h3>Option A — Qualified long context</h3>
+<p>Supply the complete qualified policy package or complete qualified sections after deterministic validation.</p>
+<ul>
+<li>Strengths: simpler operating model; preserves surrounding meaning; avoids retrieval omission.</li>
+<li>Weaknesses: higher token consumption; potentially slower; model may overlook distant evidence.</li>
+<li>Cost: model input dominates variable cost; resolver, assembly, evaluation, and audit remain operational costs.</li>
+<li>Security: authorization and applicability must precede context assembly.</li>
+<li>Suitable when: scope is bounded, package fits, and measured quality and economics satisfy requirements.</li>
+</ul>
+<h3>Option B — Filtered retrieval</h3>
+<p>Resolve applicability first, then retrieve only within the authorized governing package.</p>
+<ul>
+<li>Strengths: smaller model context; potentially lower latency and inference cost; focused evidence.</li>
+<li>Weaknesses: evidence may be silently omitted; ingestion, indexing, filtering, reranking, and reprocessing must be operated.</li>
+<li>Cost: lower possible model cost but higher fixed engineering, storage, evaluation, and on-call cost.</li>
+<li>Security: applicability and authorization filters remain hard boundaries, not relevance hints.</li>
+<li>Suitable when: measured long-context limitations outweigh the full retrieval burden.</li>
+</ul>
+<h3>Option C — Qualified sections without a retrieval subsystem</h3>
+<p>Use deterministic document structure and domain rules to select complete governing sections.</p>
+<ul>
+<li>Strengths: may reduce tokens while avoiding semantic retrieval infrastructure.</li>
+<li>Weaknesses: section rules and document structures can become another fragile assembly mechanism.</li>
+<li>Suitable when: document structure is reliable and required evidence can be selected deterministically.</li>
+</ul>
+<h2>9. Counterarguments and Devil&#39;s Advocate</h2>
+<p>The strongest objection to long context is that avoiding retrieval infrastructure may merely transfer complexity into token cost, latency, model attention, and package assembly. A retrieval system could create a materially better business outcome if it reduces latency and cost while maintaining applicability and evidence coverage.</p>
+<p>Operations would challenge large repeated requests and incident attribution. Security would challenge claim context, authorization, notification privacy, and logs. Finance would challenge cost per successful answer rather than cost per call. Governance would reject a design unable to reproduce the policy version and evidence used.</p>
+<h2>10. Trade-off Analysis</h2>
+<ul>
+<li>Context completeness versus focused attention.</li>
+<li>Model-variable cost versus retrieval fixed and operational cost.</li>
+<li>Faster pilot delivery versus preparation for unproven growth.</li>
+<li>Agent convenience versus required qualification for date-sensitive questions.</li>
+<li>Safe abstention versus manual-review capacity and business usefulness.</li>
+<li>Reuse efficiency versus invalidation and stale-conclusion risk.</li>
+</ul>
+<h2>11. Cost Model</h2>
+<pre><code class="language-text">Long-context monthly cost
+≈ requests × average input tokens × effective token price
++ output generation
++ resolver/assembler operations
++ evaluation, review, observability, and incidents
+</code></pre>
+<pre><code class="language-text">Retrieval monthly cost
+≈ requests × retrieval-query cost
++ model cost for retrieved context
++ ingestion, indexing, storage, and reprocessing
++ engineering and on-call ownership
++ evaluation, review, observability, and incidents
+</code></pre>
+<p>The comparison metric is cost per correct, useful answer—not model cost alone. Traffic, follow-up turns, document reuse, update frequency, manual review, and failure cost affect the crossover.</p>
+<h2>12. Operational Concerns</h2>
+<ul>
+<li>Owners: policy domain, resolver/package assembly, application/model, security, evaluation, and operations; exact HealthSure assignments remain open.</li>
+<li>Monitor: applicability failures, package completeness, material errors, abstentions, corrections, latency, token use, and cost per successful answer.</li>
+<li>Degrade: request missing information or abstain; never silently select a convenient policy version.</li>
+<li>Rollback: disable affected question classes or the pilot cohort.</li>
+<li>Investigate: preserve request inputs, resolver decision, package identity, context, model/configuration, answer, citations, and customer impact.</li>
+<li>Background work: bind results to immutable claim context; navigation alone does not prove cancellation intent.</li>
+</ul>
+<h2>13. Security, Privacy, and Governance</h2>
+<ul>
+<li>authenticate and authorize before access and again before result display;</li>
+<li>use least privilege across policy, member, and claim data;</li>
+<li>prevent inapplicable and unauthorized versions from entering context or retrieval scope;</li>
+<li>disclose the claim/service-date scope safely without unnecessary identifiers;</li>
+<li>separate audit retention from response caching;</li>
+<li>govern prompts, model/configuration versions, policy lineage, and manual-review evidence;</li>
+<li>avoid sensitive content in background notifications and logs.</li>
+</ul>
+<h2>14. Evaluation and Evidence</h2>
+<p>Use a human-reviewed golden dataset plus held-out and adversarial sets. For every question record the applicable package, required clauses, expected conclusion, limitations, acceptable citations, and abstention conditions.</p>
+<p>Measure:</p>
+<ul>
+<li>applicability and package-selection accuracy;</li>
+<li>required-clause coverage;</li>
+<li>material-answer correctness;</li>
+<li>exclusion and limitation recall;</li>
+<li>unsupported-claim and wrong-version rates;</li>
+<li>citation correctness;</li>
+<li>appropriate and inappropriate abstention;</li>
+<li>research time, handle-time effect, correction effort, and usefulness;</li>
+<li>p50, p95, and p99 end-to-end latency by meaningful question class;</li>
+<li>token consumption and cost per successful answer.</li>
+</ul>
+<p>Accepted-unchanged answers are not independently proven correct. A finite evaluation can establish zero observed material errors, not a true zero production error rate.</p>
+<p>Release blockers include materially wrong conclusions, inapplicable historical versions, silent package incompleteness, and unsupported definitive answers. Pilot acceptance thresholds and manual-review capacity remain open HealthSure decisions.</p>
+<h2>15. Final Recommendation</h2>
+<blockquote>
+<p>Under the current assumptions and constraints, HealthSure should begin with qualified long context in a controlled agent pilot because the applicable policy package can be selected deterministically, fits within usable model context, has satisfied the current hypothetical evaluation evidence, and avoids introducing retrieval infrastructure before it demonstrates necessary value. We accept higher model-input cost, hypothetical eight-second p95 latency, and possible long-context attention limitations to gain simpler operations, complete qualified policy context, lower retrieval-omission risk, and faster pilot delivery. We would introduce retrieval only when measured quality, latency, context-capacity, authorization, or total-cost evidence shows a material net improvement after retrieval&#39;s full operating obligations are included.</p>
+</blockquote>
+<p>This recommendation is Experimental. No real HealthSure pilot or production acceptance is claimed.</p>
+<h2>16. What Would Change the Recommendation?</h2>
+<ul>
+<li>a materially wrong answer or inapplicable policy version;</li>
+<li>repeated package-completeness or model-attention failures;</li>
+<li>unacceptable workflow latency;</li>
+<li>context capacity or authorization granularity that long context cannot satisfy;</li>
+<li>corpus or product growth;</li>
+<li>unsustainable cost per successful answer;</li>
+<li>retrieval demonstrating a material net improvement after full TCO and risk are included.</li>
+</ul>
+<h2>17. HealthSure Case-Study Update</h2>
+<p>Day 2 records an Experimental qualified-long-context pilot direction. No production component is accepted. Deterministic applicability and complete package validation become pre-model boundaries. Retrieval remains deferred. The next pressure is to establish trustworthy document structure, versions, metadata, lineage, and completeness for Day 3.</p>
+<h2>18. Architect&#39;s Challenge</h2>
+<p>See <a href="architects-challenge.md">Architect&#39;s Challenge</a>: determine whether an expanding policy domain should remain on qualified long context, adopt deterministic section assembly, or introduce filtered retrieval.</p>
+<h2>19. Architect&#39;s Reflection</h2>
+<p>The lesson shifted the decision from “does it fit?” to “can we qualify, assemble, evaluate, operate, and economically justify it?” The simpler pilot is appropriate only while evidence supports its boundaries. See the <a href="../../../architect-journal/week01-day02-reflection.md">Day 2 reflection</a>.</p>
+<h2>Architecture Reasoning Journal</h2>
+<h3>Decision Point 1 — Is fitting inside context sufficient?</h3>
+<p><strong>Mentor question:</strong> What makes long context sufficient for the initial scenario?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Most agents work with one product, the document fits, and avoiding retrieval removes another system. Traffic, latency, and token cost should be revisited.</p>
+<p><strong>Challenge:</strong> Fitting proves capacity, not correctness, citations, latency, attention, authorization, or economics.</p>
+<p><strong>Refined reasoning:</strong> Use qualified long context only if deterministic selection and workload-relevant evaluation show it satisfies the business requirement.</p>
+<p><strong>Principle learned:</strong> Context capacity is not an architecture acceptance criterion.</p>
+<p><strong>Change trigger:</strong> Measured quality, latency, cost, authorization, or corpus limits.</p>
+<h3>Decision Point 2 — Which documents enter context?</h3>
+<p><strong>Mentor question:</strong> Should an amendment replace the base policy in context?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Use a deterministic layer to determine precedence and send the document containing the answer.</p>
+<p><strong>Challenge:</strong> An amendment may change one clause while the rest of the base policy and benefits schedule remain governing.</p>
+<p><strong>Refined reasoning:</strong> Deterministically establish applicability and precedence, then preserve the complete governing package or evidence proven complete.</p>
+<p><strong>Principle learned:</strong> Deterministic logic determines what governs; assembly must preserve the meaning of what governs.</p>
+<p><strong>Change trigger:</strong> Verified policy semantics demonstrating a narrower complete package.</p>
+<h3>Decision Point 3 — What is the most dangerous retrieval failure?</h3>
+<p><strong>Mentor question:</strong> How should historical-version answers be treated?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Historical-version contamination is more concerning because it can misstate whether a member has benefits.</p>
+<p><strong>Challenge:</strong> Historical policies are not universally stale; they can govern historical service dates.</p>
+<p><strong>Refined reasoning:</strong> Applicability is event-specific. Inapplicable versions must be excluded before retrieval or long-context assembly.</p>
+<p><strong>Principle learned:</strong> Semantic relevance cannot establish temporal applicability.</p>
+<p><strong>Change trigger:</strong> Verified version and effective-date rules with adversarial evidence.</p>
+<h3>Decision Point 4 — What does a “failure” mean?</h3>
+<p><strong>Mentor question:</strong> Did overlooked or omitted clauses cause wrong answers, abstentions, or incomplete explanations?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> The severity cannot be judged without knowing whether incorrect information reached the agent or customer; detected missing evidence can route to manual review.</p>
+<p><strong>Challenge:</strong> Undetected incompleteness may look like a complete context and produce confident error.</p>
+<p><strong>Refined reasoning:</strong> Classify failures by boundary and business consequence, not raw count.</p>
+<p><strong>Principle learned:</strong> Average accuracy hides critical failure modes.</p>
+<p><strong>Change trigger:</strong> Business-approved severity, abstention, and release thresholds.</p>
+<h3>Decision Point 5 — Pilot or build retrieval for growth?</h3>
+<p><strong>Mentor question:</strong> Should HealthSure pilot the simpler design or prepare for anticipated scale?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Launch a controlled pilot because the team can support assembly and production evidence is more useful than a golden set alone.</p>
+<p><strong>Challenge:</strong> Manual research and model latency were initially compared incorrectly, agent multitasking was assumed, and long context still has operational cost.</p>
+<p><strong>Refined reasoning:</strong> Pilot because the design is bounded and reversible; measure end-to-end business value, safety, latency, and unit economics before expansion.</p>
+<p><strong>Principle learned:</strong> Use constrained pilots to convert assumptions into evidence.</p>
+<p><strong>Change trigger:</strong> Business outcomes, safety reports, cost, or latency violating thresholds.</p>
+<h3>Decision Point 6 — Does agent acceptance prove success?</h3>
+<p><strong>Mentor question:</strong> Can accepted-unchanged answers establish correctness?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> No; research time, handle time, usefulness, latency distributions, edits, abandonment, unreviewed answers, and customer impact are missing.</p>
+<p><strong>Challenge:</strong> Zero observed errors does not prove zero underlying production risk.</p>
+<p><strong>Refined reasoning:</strong> Hold expansion until safety incidents, review backlog, business outcomes, and independent correctness are resolved.</p>
+<p><strong>Principle learned:</strong> Adoption measures behavior; evaluation establishes safe value.</p>
+<p><strong>Change trigger:</strong> Completed independent review and business outcome evidence.</p>
+<h3>Decision Point 7 — Missing service date and claim context</h3>
+<p><strong>Mentor question:</strong> Should the system infer a missing service date?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Benefits depend on service date; allow defaults only for categories where the date cannot change the outcome.</p>
+<p><strong>Challenge:</strong> Category classification becomes a correctness boundary and apparent date independence can change.</p>
+<p><strong>Refined reasoning:</strong> Default to date-dependent; allowlist validated exceptions; use authoritative selected-claim context when unambiguous and disclose the scope.</p>
+<p><strong>Principle learned:</strong> Uncertainty crossing a material correctness boundary fails toward qualification.</p>
+<p><strong>Change trigger:</strong> Evidence that an allowlisted category becomes version-sensitive or an authoritative event supplies the date safely.</p>
+<h3>Decision Point 8 — Background requests and context binding</h3>
+<p><strong>Mentor question:</strong> Cancel Claim A when the agent navigates to Claim B?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Keep the request if the agent will return; cancel it otherwise to save model cost.</p>
+<p><strong>Challenge:</strong> Future intent cannot be inferred from navigation, and cancellation may save little after inference begins.</p>
+<p><strong>Refined reasoning:</strong> Bind results immutably to Claim A, permit explicit cancellation, measure reuse and waste, and never display Claim A&#39;s answer as Claim B&#39;s.</p>
+<p><strong>Principle learned:</strong> Request lifecycle policy depends on explicit intent and measured economics.</p>
+<p><strong>Change trigger:</strong> Material unused inference cost and verified cancellation savings.</p>
+<h3>Decision Point 9 — Audit, cache, and changed claim state</h3>
+<p><strong>Mentor question:</strong> Reuse the same answer after claim state changes?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Generate a new answer because the prior conclusion reflected the previous point-in-time state.</p>
+<p><strong>Challenge:</strong> Stable policy evidence might be reusable, but identifying stable components adds another invalidation responsibility.</p>
+<p><strong>Refined reasoning:</strong> Regenerate during the pilot; measure whether recomputation creates a business problem before adding component-level reuse.</p>
+<p><strong>Principle learned:</strong> Cache evidence only within its freshness boundary; do not reuse conclusions across authoritative state changes.</p>
+<p><strong>Change trigger:</strong> Repeated queries and measured token/latency savings exceeding implementation, operations, evaluation, and incident risk.</p>
+<h2>Next Lesson</h2>
+<p>Day 3 — Document Ingestion, Structure, Versions &amp; Metadata</p>
+<blockquote>
+<p>How do we ensure the model receives the correct version of complete, authoritative information?</p>
+</blockquote>
+<hr>
+<p><strong>Navigation:</strong> <a href="../day01-knowledge-access/README.md">Previous: Day 1</a> · <a href="../README.md">Week 1 overview</a> · Next: Day 3 — Document Ingestion, Structure, Versions &amp; Metadata</p>
+</main></body></html>
