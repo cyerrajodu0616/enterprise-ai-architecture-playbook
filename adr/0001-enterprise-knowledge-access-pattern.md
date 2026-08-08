@@ -15,7 +15,7 @@ Use question- and source-aware access patterns:
 
 ## Why Proposed, Not Accepted
 
-Long context vs retrieval, centralized serving, and replica/cache choices still depend on unresolved HealthSure evidence.
+ADR-0002 records a qualified-long-context pilot as Experimental, but production acceptance, centralized serving, and replica/cache choices still depend on unresolved HealthSure evidence.
 
 ## Strongest Counterargument
 
@@ -24,3 +24,7 @@ A unified serving/retrieval layer may simplify integration, protect fragile sour
 ## Review Triggers
 
 Revisit when real corpus, traffic, latency, freshness, authorization, source-capacity, and evaluation evidence are available.
+
+## Related Decisions
+
+- ADR-0002 refines the policy-language access path experimentally and does not supersede this proposed question- and source-aware pattern.

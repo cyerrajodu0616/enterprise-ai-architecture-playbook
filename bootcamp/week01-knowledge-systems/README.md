@@ -1,6 +1,6 @@
 # Week 1 — Knowledge Systems
 
-**Status:** Not Started
+**Status:** In Progress — Days 1 and 2 completed; next is Day 3
 
 ## Architectural Capability
 
@@ -52,7 +52,7 @@ This sequence is intentionally provisional. The objective is not to complete sev
 
 The lesson should establish requirements and assumptions before selecting an architecture. Do not assume retrieval is required.
 
-### Day 2 — Long Context vs Retrieval
+### [Day 2 — Long Context vs Retrieval](day02-long-context-vs-retrieval/README.md)
 
 **Purpose:** Determine when retrieval earns its additional complexity compared with supplying the necessary context directly to the model.
 
