@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day 1 — How Should an AI System Access Enterprise Knowledge?</title>
+<style>
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:1080px;margin:0 auto;padding:32px;line-height:1.65;color:#1f2937}
+h1,h2,h3{line-height:1.25;color:#111827}
+h2{margin-top:2.2rem;border-bottom:1px solid #e5e7eb;padding-bottom:.35rem}
+pre{background:#f3f4f6;padding:16px;border-radius:10px;overflow:auto}
+blockquote{border-left:4px solid #9ca3af;margin-left:0;padding:10px 16px;background:#f9fafb;color:#374151}
+ul{padding-left:1.4rem}
+p{margin:.7rem 0}
+hr{border:0;border-top:1px solid #e5e7eb;margin:2rem 0}
+</style>
+</head>
+<body>
+<h1>Day 1 — How Should an AI System Access Enterprise Knowledge?</h1>
+<h2>Status</h2>
+<p>Lesson reasoning completed. Final access architecture remains conditional on unresolved HealthSure requirements.</p>
+<h2>Executive Summary</h2>
+<p>HealthSure wants an internal service-agent assistant that can answer policy questions and show governing evidence.</p>
+<p>The main architectural lesson is that we should not begin with RAG. We should begin by identifying the business question, the authoritative source for each required fact, version/freshness/correctness requirements, and the simplest mechanism that satisfies them.</p>
+<p>No final long-context-versus-retrieval decision was accepted.</p>
+<h2>Architecture Reasoning Journal</h2>
+<p>This section preserves the important reasoning path from the Day 1 discussion. It is intentionally not a raw transcript. It records the learner&#x27;s actual architectural thinking, the challenge applied, and the refined principle.</p>
+<h3>Decision Point 1 — What should we ask before deciding whether to build RAG?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>HealthSure wants an internal service-agent assistant. The initial temptation is to ask, “Should we build RAG?”</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner first asked:</p>
+<ul>
+<li>What information are we trying to serve?</li>
+<li>Is it general policy information such as deductible rules, coverage, or exclusions?</li>
+<li>Is it member-specific information such as remaining deductible or claim history?</li>
+<li>How many products exist?</li>
+<li>How frequently does policy information change?</li>
+<li>How much request volume exists?</li>
+<li>What latency is acceptable?</li>
+<li>What is the cost of a wrong answer?</li>
+</ul>
+<p>For the simplest solution, the learner proposed:</p>
+<ul>
+<li>use text search before a vector database;</li>
+<li>use structured data when policy information is structured;</li>
+<li>combine structured data and text search when needed.</li>
+</ul>
+<p><strong>Challenge</strong></p>
+<p>The important missing dimension was authority.</p>
+<p>Document size and corpus scale matter, but they do not answer:</p>
+<ul>
+<li>Which source is authoritative?</li>
+<li>Which policy version applies?</li>
+<li>Can all agents access the same data?</li>
+<li>Must the answer cite governing language?</li>
+<li>What is the consequence of stale or incorrect information?</li>
+</ul>
+<p>The learner was also challenged on starting the simplicity ladder at “text search.” If the complete relevant document can be supplied directly, search itself may be unnecessary.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>The access decision should begin with:</p>
+<pre><code>What question is being asked?
+    ↓
+What facts are required?
+    ↓
+Where is each fact authoritative?
+    ↓
+What version/effective date applies?
+    ↓
+What freshness/correctness/latency is required?
+    ↓
+What is the simplest mechanism that satisfies that?</code></pre>
+<p><strong>Principle learned</strong></p>
+<blockquote>Do not confuse “knowledge the AI needs” with “documents the AI must search.”</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Real query patterns, corpus size, source authority, security boundaries, latency, and evaluation evidence.</p>
+<hr>
+<h3>Decision Point 2 — Should all enterprise data go into the vector database?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>Product proposes storing policy data, claims data, member accumulators, and related information in one vector database.</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner rejected the proposal because:</p>
+<ul>
+<li>there are structured and unstructured information types;</li>
+<li>policy information changes and would require vector-index updates;</li>
+<li>policy versions must be preserved;</li>
+<li>claims and accumulators change frequently;</li>
+<li>embeddings could become stale;</li>
+<li>data freshness must be clarified.</li>
+</ul>
+<p>The learner also proposed converting some unstructured policy content into structured fields such as deductible, copay, and covered services.</p>
+<p><strong>Challenge</strong></p>
+<p>The learner was challenged on two points.</p>
+<p>First, the core issue is not merely “structured vs unstructured.” It is:</p>
+<ul>
+<li>system of authority;</li>
+<li>freshness;</li>
+<li>version semantics;</li>
+<li>correctness;</li>
+<li>operational ownership.</li>
+</ul>
+<p>Second, converting all policy language into structured data can create another derived source that must stay synchronized with the governing policy. Complex exclusions and conditions may lose meaning.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>Keep changing operational facts in authoritative structured systems when possible. Use document retrieval only for knowledge that truly requires document interpretation.</p>
+<p>For policy language:</p>
+<ul>
+<li>determine the applicable policy/version deterministically;</li>
+<li>constrain retrieval by metadata;</li>
+<li>then let the LLM interpret already-qualified evidence.</li>
+</ul>
+<p><strong>Principle learned</strong></p>
+<blockquote>Semantic similarity cannot establish authority, freshness, or legal/business applicability.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>If source systems cannot support the workload, or a governed serving layer can satisfy freshness, reproducibility, and access requirements better than direct access.</p>
+<hr>
+<h3>Decision Point 3 — What should the request flow look like?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>Question:</p>
+<blockquote>Why did a member pay a particular amount for yesterday&#x27;s ambulance claim?</blockquote>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner proposed:</p>
+<p>1. directly access the claims system for claim details, member accumulators, and network status;</p>
+<p>2. identify the policy version from the policy system;</p>
+<p>3. use the LLM to identify policy and coverage language for ambulance service;</p>
+<p>4. combine the information and generate the response.</p>
+<p><strong>Challenge</strong></p>
+<p>The claims system may not own all required facts. Accumulators and network status may belong to different authoritative systems.</p>
+<p>The LLM should not decide which policy language is authoritative. The system should first resolve:</p>
+<ul>
+<li>member;</li>
+<li>claim;</li>
+<li>service date;</li>
+<li>policy;</li>
+<li>version;</li>
+<li>effective date;</li>
+<li>product/jurisdiction if relevant.</li>
+</ul>
+<p>Only after that should retrieval or context assembly occur.</p>
+<p><strong>Refined reasoning</strong></p>
+<pre><code>Question
+    ↓
+Resolve business context
+    ↓
+Authoritative operational facts + authoritative policy scope
+    ↓
+Qualified evidence package
+    ↓
+LLM synthesis and explanation</code></pre>
+<p><strong>Principle learned</strong></p>
+<blockquote>Deterministic systems establish facts and scope. The LLM explains those facts.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>If no authoritative deterministic source exists and the business explicitly accepts model-based inference.</p>
+<hr>
+<h3>Decision Point 4 — Should the LLM calculate financial responsibility?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>The claim system shows a member responsibility amount, and policy language describes deductible and coinsurance rules.</p>
+<p><strong>Learner&#x27;s evolving reasoning</strong></p>
+<p>The lesson established that the LLM should not normally reproduce authoritative adjudication mathematics when the business system already owns the result.</p>
+<p><strong>Challenge</strong></p>
+<p>An LLM may be able to calculate the amount correctly, but “can calculate” is not the same as “should own the calculation.”</p>
+<p><strong>Refined reasoning</strong></p>
+<p>Use the authoritative adjudication or calculation system to provide:</p>
+<ul>
+<li>deductible applied;</li>
+<li>coinsurance;</li>
+<li>member responsibility.</li>
+</ul>
+<p>Use the LLM to explain the result in plain language.</p>
+<p><strong>Principle learned</strong></p>
+<blockquote>Use AI for interpretation where uncertainty exists. Use deterministic computation where deterministic rules exist.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Only when no authoritative calculation system exists and the business formally accepts a model-based calculation path with appropriate validation and controls.</p>
+<hr>
+<h3>Decision Point 5 — Why not copy everything into one centralized AI database nightly?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>The CTO proposes copying claims, benefits, network, and policy data into a central AI database every night.</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner argued:</p>
+<ul>
+<li>direct integrations preserve fresher information;</li>
+<li>another system creates storage, compute, embedding, vector, and operational cost;</li>
+<li>traceability becomes harder because answers may need to be reconciled against source systems;</li>
+<li>nightly refresh cannot satisfy tighter freshness requirements.</li>
+</ul>
+<p><strong>Challenge</strong></p>
+<p>The centralized design is not inherently wrong.</p>
+<p>It may be better when:</p>
+<ul>
+<li>source systems are fragile;</li>
+<li>request traffic is high;</li>
+<li>direct fan-out creates latency;</li>
+<li>bounded staleness is acceptable;</li>
+<li>reproducibility requires governed historical snapshots.</li>
+</ul>
+<p><strong>Refined reasoning</strong></p>
+<p>Reject centralization only when it fails the business requirements. Accept it when its simplification and operational isolation outweigh duplicated-state and staleness costs.</p>
+<p><strong>Principle learned</strong></p>
+<blockquote>Centralization is a trade-off, not a virtue or a defect.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Source-system capacity, traffic, freshness tolerance, reproducibility requirements, and latency evidence.</p>
+<hr>
+<h3>Decision Point 6 — Should we cache accumulator data to hit a 2-second SLA?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>The authoritative accumulator system sometimes takes 3–4 seconds, while Product asks for responses under 2 seconds.</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>Before recommending anything, the learner asked:</p>
+<ul>
+<li>What is the business risk of 3–4 second latency?</li>
+<li>Are we losing customers or productivity because of that latency?</li>
+<li>Can users tolerate one extra second for a correct response?</li>
+<li>If the business impact is real, perhaps cache accumulator data.</li>
+</ul>
+<p><strong>Challenge</strong></p>
+<p>Caching cannot be evaluated without a freshness requirement.</p>
+<p>A cache may make the answer faster but wrong if the accumulator changes after the cached value was written.</p>
+<p>The use of “edge” was also challenged: if the delay is in the backend calculation, geographic proximity does not solve it.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>First challenge and measure the latency requirement. Then define acceptable staleness. Only then evaluate cache, replica, or serving-store patterns.</p>
+<p><strong>Principle learned</strong></p>
+<blockquote>Do not optimize latency without defining the maximum acceptable staleness of the fact being accelerated.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Measured workflow impact, data-change frequency, source latency profile, and business tolerance for stale values.</p>
+<hr>
+<h3>Decision Point 7 — Should we use a read replica?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>The learner was given a hypothetical system in which the primary database had high p95 latency because of write contention, while a read replica responded much faster with bounded replication lag.</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner first proposed investigating:</p>
+<ul>
+<li>network latency;</li>
+<li>expensive operations;</li>
+<li>avoidable processing;</li>
+<li>whether read/write contention is causing the delay.</li>
+</ul>
+<p>If the same system is overloaded by reads and writes, the learner proposed a read replica.</p>
+<p><strong>Challenge</strong></p>
+<p>The read replica does not automatically solve the requirement. Replication lag creates a freshness dimension that must be compared against a freshness SLA.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>A read replica is justified only if:</p>
+<pre><code>replica response latency &lt;= latency requirement
+AND
+replication lag &lt;= freshness requirement</code></pre>
+<p><strong>Principle learned</strong></p>
+<blockquote>Read replicas trade freshness for serving performance and workload isolation.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>If the bottleneck is not on the database read path, or if replication lag exceeds business tolerance.</p>
+<hr>
+<h3>Decision Point 8 — Comparing primary latency with replica lag</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>Hypothetical values:</p>
+<ul>
+<li>primary p99 response latency: 6.1 seconds;</li>
+<li>replica p99 replication lag: 11 seconds.</li>
+</ul>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner initially reasoned that because the primary&#x27;s p99 latency was lower than the replica&#x27;s p99 lag, the primary might be preferable because it remains authoritative and avoids another system.</p>
+<p><strong>Challenge</strong></p>
+<p>This comparison mixes two different dimensions:</p>
+<ul>
+<li>6.1 seconds is response latency;</li>
+<li>11 seconds is data staleness.</li>
+</ul>
+<p>They cannot be compared directly.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>Compare each metric to its own requirement:</p>
+<pre><code>Primary p95 response latency
+    ↔ latency SLA
+
+Replica p95 response latency
+    ↔ latency SLA
+
+Replica replication lag
+    ↔ freshness SLA</code></pre>
+<p>Under the hypothetical example used in the lesson:</p>
+<ul>
+<li>replica response latency met the &lt;2 second target;</li>
+<li>replica lag remained inside a 30-second staleness tolerance.</li>
+</ul>
+<p>Therefore the replica could be justified despite being less fresh than the primary.</p>
+<p><strong>Principle learned</strong></p>
+<blockquote>Never compare metrics merely because they are both measured in seconds. Compare each metric to the business property it represents.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Different latency or freshness requirements, or evidence that the source can meet both directly.</p>
+<hr>
+<h3>Decision Point 9 — What happens when replica lag exceeds the SLA?</h3>
+<p><strong>Mentor scenario</strong></p>
+<p>Replica lag occasionally rises above the allowed freshness threshold.</p>
+<p><strong>Learner&#x27;s initial reasoning</strong></p>
+<p>The learner proposed giving the agent a choice:</p>
+<ul>
+<li>return the answer immediately with an “as of” timestamp;</li>
+<li>or wait longer for the authoritative source.</li>
+</ul>
+<p>The learner also noticed that if traffic is heavy, many fallback requests could increase waiting time further.</p>
+<p>The learner proposed investigating where the lag is introduced before redesigning the system.</p>
+<p><strong>Challenge</strong></p>
+<p>Human choice is not appropriate for every risk class. A user should not always be asked to choose between speed and correctness.</p>
+<p>Also, automatic fallback to the primary may create a feedback loop that worsens the outage.</p>
+<p><strong>Refined reasoning</strong></p>
+<p>Use risk-based degradation:</p>
+<pre><code>Replica fresh enough?
+    ├─ yes → serve replica
+    └─ no
+         ↓
+    Is stale data safe?
+         ├─ yes → serve with explicit timestamp
+         └─ no  → authoritative source or abstain</code></pre>
+<p>Fallback must also consider:</p>
+<ul>
+<li>rate limits;</li>
+<li>concurrency;</li>
+<li>circuit breakers;</li>
+<li>retry policy;</li>
+<li>source protection.</li>
+</ul>
+<p><strong>Principle learned</strong></p>
+<blockquote>Graceful degradation is a business-risk policy, not merely a technical fallback rule.</blockquote>
+<p><strong>What would change the position</strong></p>
+<p>Question risk class, freshness requirement, source-system capacity, and user workflow expectations.</p>
+<hr>
+<h3>Day 1 Reasoning Summary</h3>
+<p>The learner&#x27;s reasoning evolved from:</p>
+<pre><code>Should we use text search or vectors?</code></pre>
+<p>to:</p>
+<pre><code>What business question is being answered?
+    ↓
+What facts are required?
+    ↓
+Where is each fact authoritative?
+    ↓
+What version and effective date apply?
+    ↓
+How fresh must each fact be?
+    ↓
+What latency and correctness are required?
+    ↓
+What is the simplest access path?
+    ↓
+What failure and fallback behavior is acceptable?</code></pre>
+<p>That shift is the primary architectural outcome of Day 1.</p>
+<h2>Formal Architecture Position</h2>
+<h3>Simplest solution ladder</h3>
+<pre><code>1. Direct / supplied context
+        ↓ insufficient?
+2. Structured SQL or API access
+        ↓ insufficient?
+3. Traditional lexical search
+        ↓ insufficient?
+4. Semantic retrieval
+        ↓ insufficient?
+5. Hybrid retrieval
+        ↓ insufficient?
+6. Reranking / advanced retrieval</code></pre>
+<p>Different question classes may use different mechanisms permanently.</p>
+<h3>Current recommendation</h3>
+<blockquote>Under the current known HealthSure state, do not select one universal knowledge-access architecture. Classify questions, identify authoritative sources, define freshness, latency, versioning, authorization, and correctness requirements, then choose the simplest access mechanism per information class.</blockquote>
+<h3>Strongest counterargument</h3>
+<p>A unified serving/retrieval platform may simplify integration, isolate fragile source systems, and improve reproducibility. It should be adopted if evidence shows those benefits outweigh staleness, duplication, lineage, and operating cost.</p>
+<h3>Decision state</h3>
+<ul>
+<li>Vector database as universal canonical store: not recommended.</li>
+<li>Structured operational facts via authoritative systems: current preferred direction.</li>
+<li>Policy language via direct context/search/retrieval: conditional.</li>
+<li>Central serving layer/read replica/cache: conditional on measured need.</li>
+<li>Long context vs retrieval: deferred to Day 2.</li>
+</ul>
+<h2>Cost and Operations</h2>
+<p>Relevant cost drivers:</p>
+<ul>
+<li>integrations;</li>
+<li>serving copies;</li>
+<li>indexing and embeddings;</li>
+<li>model usage;</li>
+<li>observability;</li>
+<li>reconciliation;</li>
+<li>source protection;</li>
+<li>on-call ownership.</li>
+</ul>
+<p>Operational design must consider:</p>
+<ul>
+<li>source latency;</li>
+<li>source capacity;</li>
+<li>replication lag;</li>
+<li>retry behavior;</li>
+<li>fallback storms;</li>
+<li>degradation;</li>
+<li>lineage;</li>
+<li>“as of” timestamps.</li>
+</ul>
+<h2>Security and Governance</h2>
+<p>The design must eventually establish:</p>
+<ul>
+<li>identity and authorization boundaries;</li>
+<li>member-data isolation;</li>
+<li>policy-version lineage;</li>
+<li>source attribution;</li>
+<li>audit evidence;</li>
+<li>safe prompt/log handling.</li>
+</ul>
+<h2>Evaluation Evidence Needed</h2>
+<ul>
+<li>real agent question taxonomy;</li>
+<li>corpus inventory;</li>
+<li>source-of-truth map;</li>
+<li>policy version semantics;</li>
+<li>freshness requirements;</li>
+<li>latency requirements;</li>
+<li>business impact of latency;</li>
+<li>source capacity;</li>
+<li>authorization model;</li>
+<li>evaluation dataset and thresholds.</li>
+</ul>
+<h2>What Would Change the Recommendation?</h2>
+<ul>
+<li>corpus growth;</li>
+<li>traffic growth;</li>
+<li>source-system constraints;</li>
+<li>latency evidence;</li>
+<li>authorization complexity;</li>
+<li>retrieval-quality evidence;</li>
+<li>model/context economics;</li>
+<li>new business use cases.</li>
+</ul>
+<h2>Next Lesson</h2>
+<p>Day 2 — Long Context vs Retrieval</p>
+<blockquote>When does retrieval provide enough value to justify an additional subsystem compared with supplying the relevant context directly?</blockquote>
+<hr>
+<p><strong>Navigation:</strong> Previous: Week 1 overview · Next: Day 2 — Long Context vs Retrieval</p>
+</body></html>

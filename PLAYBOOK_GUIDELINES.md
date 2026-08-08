@@ -495,6 +495,69 @@ End with:
 - Architect's Reflection
 ```
 
+## Architecture Reasoning Journal Requirement
+
+A complete lesson must preserve not only the final recommendation, but also the reasoning path that produced it.
+
+For every meaningful architectural decision point, record:
+
+1. **Mentor Question or Scenario**
+2. **Learner's Initial Reasoning**
+3. **Challenge / Counterargument**
+4. **Refined Reasoning**
+5. **Architectural Principle Learned**
+6. **What Evidence Would Change the Position**
+
+The objective is not to preserve a raw chat transcript. The objective is to preserve a curated decision trail that allows the learner to revisit how architectural judgment evolved.
+
+### Why This Is Required
+
+A final recommendation without the reasoning path hides:
+
+- assumptions that were challenged;
+- incorrect comparisons that were corrected;
+- trade-offs that became visible only after counterargument;
+- why a simpler or more complex option was accepted or rejected;
+- how business requirements changed the architecture.
+
+The lesson should make it possible to answer:
+
+> Why did we believe this at the time, and what reasoning would we repeat in a future architecture review?
+
+### HTML Lesson Requirement
+
+Each detailed HTML lesson should contain an **Architecture Reasoning Journal** section with representative decision conversations.
+
+Use the format:
+
+```text
+Mentor Question
+→ Learner Reasoning
+→ Challenge
+→ Refined Reasoning
+→ Principle Learned
+→ Change Trigger
+```
+
+The journal should preserve the learner's actual reasoning faithfully while correcting grammar only enough for readability. Do not rewrite the learner into an artificially perfect architect.
+
+### ADR Relationship
+
+The Architecture Reasoning Journal is not a replacement for an ADR.
+
+- The journal preserves the reasoning journey.
+- The ADR records the decision state.
+- If evidence is insufficient, the ADR remains Proposed/Experimental/Deferred as appropriate.
+
+### Session Handoff
+
+`CURRENT_SESSION.md` should note:
+
+- which reasoning shifts occurred;
+- which learner assumptions were challenged;
+- which decisions remain unresolved;
+- which reasoning threads should be revisited later.
+
 ## Governing Principle
 
 > Every statement should answer **Why?** before it answers **How?**
