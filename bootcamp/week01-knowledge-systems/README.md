@@ -1,6 +1,6 @@
 # Week 1 — Knowledge Systems
 
-**Status:** In Progress — Days 1 and 2 completed; next is Day 3
+**Status:** In Progress — Days 1–3 completed; next is Day 4
 
 ## Architectural Capability
 
@@ -74,7 +74,7 @@ The lesson should establish requirements and assumptions before selecting an arc
 
 The counterargument must remain explicit: modern large-context models may eliminate the need for retrieval for some workloads.
 
-### Day 3 — Document Ingestion, Structure, Versions & Metadata
+### [Day 3 — Document Ingestion, Structure, Versions & Metadata](day03-document-ingestion-structure-versions-metadata/README.md)
 
 **Purpose:** Understand what must happen before enterprise documents become trustworthy AI knowledge sources.
 

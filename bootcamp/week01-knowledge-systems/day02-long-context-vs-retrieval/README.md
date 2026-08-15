@@ -390,4 +390,4 @@ Day 3 — Document Ingestion, Structure, Versions & Metadata
 
 ---
 
-**Navigation:** [Previous: Day 1](../day01-knowledge-access/README.md) · [Week 1 overview](../README.md) · Next: Day 3 — Document Ingestion, Structure, Versions & Metadata
+**Navigation:** [Previous: Day 1](../day01-knowledge-access/README.md) · [Week 1 overview](../README.md) · [Next: Day 3](../day03-document-ingestion-structure-versions-metadata/README.md)
