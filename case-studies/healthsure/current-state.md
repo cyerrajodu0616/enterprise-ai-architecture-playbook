@@ -39,6 +39,16 @@ Materially wrong answers, inapplicable historical versions, and silently incompl
 
 All numerical corpus, traffic, token, latency, evaluation, and pilot examples discussed during Day 2 were hypothetical learning scenarios, not HealthSure facts. Real business outcomes, corpus structure, policy-version semantics, authorization boundaries, latency requirements, total cost, and evaluation thresholds remain open evidence.
 
+## Day 3 Reasoning Update
+
+No production architecture component has been accepted. ADR-0002 remains Experimental, and retrieval remains deferred.
+
+ADR-0003 proposes a version-aware, structure-aware policy-ingestion and eligibility boundary. It separates immutable source and metadata identity, parsed representation, technical validation, business approval, applicability, authorization, and eligibility. It also proposes authoritative package manifests, atomic activation, dependency-based invalidation, and both answer-to-evidence and resolver lineage.
+
+This is a logical boundary, not a deployed registry, parser, store, event system, approval workflow, or production architecture. HealthSure should reference originals from authoritative sources only if exact immutable historical retrieval and integrity are guaranteed; otherwise a governed copy would be required. Those source guarantees are unknown.
+
+Initial activation is proposed as manual with shadow automation. Automatic activation under narrowly preapproved rules remains conditional. HealthSure source repositories and owners, policy semantics, document formats, freshness, authorization, retention, review capacity, separation of duties, scale, and evaluation thresholds remain open evidence.
+
 ## Immediate Architectural Work
 
 - Classify the questions service agents actually ask.
@@ -51,3 +61,6 @@ All numerical corpus, traffic, token, latency, evaluation, and pilot examples di
 - Define golden, held-out, adversarial, and pilot evaluation evidence and acceptance criteria.
 - Measure qualified-long-context research-time savings, handle-time effect, correction effort, abstention/manual-review burden, latency, and cost per successful answer.
 - Compare retrieval only after measured quality, latency, context-capacity, authorization, corpus-growth, or total-cost limits justify it.
+- Inventory authoritative policy repositories, owners, formats, package relationships, and historical-retrieval guarantees.
+- Validate meaning-bearing document structures, parser rules, manifests, eligibility evidence, and retroactive impact analysis on real artifacts.
+- Define activation, suspension, manual fallback, retention, authorization, and review responsibilities before production approval.

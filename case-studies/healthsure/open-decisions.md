@@ -3,6 +3,7 @@
 These questions begin unresolved. Each decision must compare the simplest viable solution, alternatives, counterarguments, cost, operational concerns, security and governance, and the conditions that would change the recommendation.
 
 - Long context versus retrieval — qualified long context is Experimental for a controlled pilot; production acceptance and retrieval migration triggers remain open
+- Version-aware policy ingestion and eligibility — Proposed boundary; original retention, activation automation, production controls, and implementation remain open
 - Batch versus streaming
 - Structured data access versus document search
 - Shared versus domain-owned platform capabilities

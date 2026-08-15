@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Enterprise AI Architecture Playbook Week 1 Day 3 lesson">
+<title>Day 3 — Document Ingestion, Structure, Versions &amp; Metadata</title>
+<style>
+:root{color-scheme:light;--ink:#162033;--line:#d8e0ec;--blue:#174ea6;--soft:#eef5ff;--paper:#fff}
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1040px;margin:32px auto;padding:48px 64px;background:var(--paper);box-shadow:0 10px 35px rgba(22,32,51,.09);border-radius:18px}
+h1{font-size:2.45rem;line-height:1.12;margin-top:0}h2{font-size:1.55rem;margin-top:2.4rem;padding-top:.65rem;border-top:1px solid var(--line)}h3{font-size:1.18rem;margin-top:1.7rem}h1,h2,h3{color:#112b52}
+p,li{max-width:82ch}blockquote{margin:1.4rem 0;padding:1rem 1.25rem;background:var(--soft);border-left:5px solid var(--blue);border-radius:0 10px 10px 0}
+pre{overflow:auto;padding:1rem 1.2rem;background:#101827;color:#e8eef8;border-radius:10px}code{font-family:"SFMono-Regular",Consolas,monospace}a{color:var(--blue)}hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+@media(max-width:720px){main{margin:0;padding:26px 20px;border-radius:0}h1{font-size:2rem}h2{font-size:1.35rem}}@media print{body{background:#fff}main{box-shadow:none;margin:0;max-width:none}}
+</style>
+</head>
+<body><main>
+<h1>Day 3 — Document Ingestion, Structure, Versions &amp; Metadata</h1>
+<h2>Status</h2>
+<p>Reasoning completed. The policy-ingestion and eligibility boundary is Proposed; no production architecture or product selection is accepted.</p>
+<h2>1. Executive Summary</h2>
+<p>HealthSure&#39;s advisory policy knowledge assistant needs more than extracted text. Before evidence reaches the model, the system must establish identity, time, authority, completeness, reproducibility, authorization, and applicability while preserving the structure that carries business meaning.</p>
+<p>The conditional recommendation is a version-aware, structure-aware policy representation with immutable source and metadata identities, deterministic package and applicability gates, explicit approval and eligibility states, atomic activation, dependency-based invalidation, and answer-to-evidence plus resolver lineage. The strongest counterargument is that a sufficiently capable authoritative source may already provide these guarantees, making a separate registry and governed copies unnecessary.</p>
+<p>ADR-0003 records this boundary as <strong>Proposed</strong>, not Accepted. Exact HealthSure sources, semantics, formats, freshness, retention, owners, review capacity, and evaluation thresholds remain open.</p>
+<h2>2. Business Problem</h2>
+<p>Service agents need complete governing policy evidence for the correct business context. Supplying the wrong version, an incomplete package, a structurally corrupted table, or an unauthorized artifact can produce a confident but materially wrong explanation.</p>
+<p>The business question is not merely whether ingestion extracted text. It is whether HealthSure can prove why the exact evidence was eligible for a particular request and can investigate what should have been used after a correction.</p>
+<h2>3. Current State and Trigger</h2>
+<h3>Known</h3>
+<ul>
+<li>The initial assistant remains internal, advisory, and non-authoritative.</li>
+<li>No production AI architecture is accepted.</li>
+<li>ADR-0002 is an Experimental qualified-long-context pilot only.</li>
+<li>Applicability, complete package validation, and authorization precede model invocation.</li>
+<li>Retrieval remains deferred until evidence earns its obligations.</li>
+</ul>
+<h3>Trigger</h3>
+<p>Day 2 depends on trustworthy packages but does not yet define how policy artifacts are represented, validated, approved, activated, invalidated, replayed, or remediated when metadata changes retroactively.</p>
+<h2>4. Naive Explanation</h2>
+<p>An ingested document is not trustworthy because a parser produced text. HealthSure must be able to answer:</p>
+<pre><code>
+What source artifact was this?
+Which metadata and package relationships applied?
+What business meaning survived parsing?
+Who approved its authority?
+For which context was it applicable and authorized?
+Why was this exact representation eligible?
+What should have been used after a correction?
+</code></pre>
+<h2>5. Requirements, Constraints, and Assumptions</h2>
+<h3>Requirements</h3>
+<ul>
+<li>Preserve identity, time, authority, completeness, and reproducibility.</li>
+<li>Preserve meaning-bearing structure and package relationships.</li>
+<li>Separate parsing, technical validation, business approval, applicability, authorization, and eligibility.</li>
+<li>Fail closed for unresolved required authoritative content or relationships.</li>
+<li>Activate complete packages atomically and retain applicable history.</li>
+<li>Support dependency-based invalidation, impact analysis, replay, and remediation.</li>
+<li>Minimize sensitive audit duplication while preserving sufficient reconstruction evidence.</li>
+</ul>
+<h3>Constraints</h3>
+<ul>
+<li>The assistant remains advisory.</li>
+<li>Inapplicable versions and silent package incompleteness remain release blockers.</li>
+<li>Ambiguity fails toward qualification, abstention, or approved manual review.</li>
+<li>No parser, model, or ingestion team may infer legal or business applicability.</li>
+</ul>
+<h3>Assumptions</h3>
+<ul>
+<li><strong>Assumption:</strong> A version-aware representation and explicit eligibility boundary can reduce wrong-version and incomplete-package risk.</li>
+<li><strong>Assumption:</strong> Manual activation and shadow automation are supportable for a controlled pilot.</li>
+<li><strong>Assumption:</strong> Exact upstream identities and versions can be recorded, even though source capabilities remain unverified.</li>
+</ul>
+<h3>Hypotheses</h3>
+<ul>
+<li><strong>Hypothesis:</strong> Structure-aware validation will prevent meaning-bearing table, footnote, and package relationships from being silently lost.</li>
+<li><strong>Hypothesis:</strong> Resolver lineage will identify retroactively affected answers that content lineage alone cannot find.</li>
+</ul>
+<h3>Open Questions</h3>
+<p>Source guarantees, policy semantics, real formats, ownership, authorization, freshness, retention, review capacity, scale, and evaluation thresholds are unknown. See <code>HS-DIM-001</code> through <code>HS-DIM-016</code> in the <a href="../../../open-questions/index.md">open-question index</a>.</p>
+<h2>6. The Simplest Viable Solution</h2>
+<p>First evaluate direct authoritative access. If a source can resolve immutable, approved, applicable, complete historical packages with required integrity, latency, availability, authorization, and capacity, HealthSure may store metadata, checksums, parsed representations, and lineage while retrieving the exact original from that source.</p>
+<p>If those guarantees are insufficient, preserve a governed immutable original and maintain a version-aware registry. Begin with manual activation by an accountable policy owner and use shadow automation only to gather evidence. Do not introduce real-time events, broad automatic activation, or a separate product choice without evidence.</p>
+<h2>7. Technical Deep Dive</h2>
+<h3>Trust and eligibility states</h3>
+<ul>
+<li><code>PARSED</code>: conversion preserved required content and structure under versioned parsing rules.</li>
+<li><code>TECHNICALLY_VALIDATED</code>: deterministic integrity, schema, metadata, structure, package, and processing checks passed.</li>
+<li><code>BUSINESS_APPROVED</code>: an accountable policy owner confirmed governing authority.</li>
+<li><code>APPLICABLE</code>: the approved package governs the confirmed business context.</li>
+<li><code>ELIGIBLE</code>: the exact authorized, applicable, approved, complete, validated representation may reach the model.</li>
+</ul>
+<p>A perfectly parsed draft is not governing policy.</p>
+<h3>Version and dependency model</h3>
+<p>Preserve separate immutable versions of the source artifact, source metadata, parsed representation, parser/configuration, validation rules/results, authority approval, package manifest, applicability decision, authorization decision, and eligibility decision. Downstream eligibility references the exact upstream versions.</p>
+<pre><code>
+Source artifact + metadata
+        ↓
+Structure-aware parsed representation
+        ↓
+Technical validation + package manifest
+        ↓
+Business approval
+        ↓
+Applicability + authorization
+        ↓
+Eligibility decision
+        ↓
+Qualified evidence supplied to model
+        ↓
+Answer + evidence lineage + resolver lineage
+</code></pre>
+<h3>Structure-aware parsing</h3>
+<p>Preserve section hierarchy, table cells and headers, footnote targets, pages, images, amendments, and affected provisions. Quarantine handwritten or ambiguous annotations until an accountable owner classifies them. Retention does not automatically make content eligible for answers.</p>
+<h3>Package validation and activation</h3>
+<p>Package completeness comes from an authoritative versioned manifest. Fail closed when a required, authoritative, meaning-bearing component or relationship fails validation. Activate all required components atomically. An old package remains available only for intervals where applicability rules still make it valid.</p>
+<h3>Change, invalidation, and freshness</h3>
+<p>A source change can affect bytes, metadata, effective dates, approval, withdrawal, amendment relationships, package membership, authority, authorization, retention, or source behavior. End-to-end freshness is:</p>
+<pre><code>
+detection + retrieval + parsing + validation + approval + activation
+</code></pre>
+<p>A parser change creates a new immutable candidate and invalidates inherited technical validation and eligibility for that representation. It does not automatically revoke business approval of the original source.</p>
+<h3>Replay and impact analysis</h3>
+<p>Content lineage identifies what influenced an answer. Resolver lineage identifies what should have influenced it. Retroactive metadata corrections therefore require historical package resolution, not only searches for answers that used the corrected artifact.</p>
+<h2>8. Architecture Options</h2>
+<h3>Option A — Direct authoritative resolution</h3>
+<p>Retrieve exact historical originals from the authoritative source and retain metadata, parsed representations, checksums, and lineage.</p>
+<ul>
+<li>Strength: avoids a duplicate original store.</li>
+<li>Weakness: depends on immutable historical retrieval, integrity, availability, authorization, retention, and export guarantees that are not yet known.</li>
+</ul>
+<h3>Option B — Version-aware registry with governed immutable originals</h3>
+<p>Retain originals plus immutable metadata, representations, manifests, validation, approval, applicability, authorization, and eligibility decisions.</p>
+<ul>
+<li>Strength: stronger replay and source-independence when upstream guarantees are insufficient.</li>
+<li>Weakness: adds storage, security, retention, reconciliation, migration, and operating obligations.</li>
+</ul>
+<h3>Option C — Minimal parsed-text pipeline</h3>
+<p>Store extracted text and current metadata with limited state management.</p>
+<ul>
+<li>Strength: simplest implementation.</li>
+<li>Weakness: cannot satisfy the proposed correctness boundary when structure, package relationships, retroactive applicability, or replay matters.</li>
+</ul>
+<h2>9. Counterarguments and Devil&#39;s Advocate</h2>
+<p>The proposed boundary may overbuild a pilot before HealthSure knows its corpus or source guarantees. An authoritative repository with immutable version access and an accountable owner could satisfy most requirements with fewer components. Manual activation can also become a bottleneck, and extensive lineage can create a sensitive secondary evidence system.</p>
+<p>The response is conditional: preserve the boundary and required evidence, but realize it with the smallest mechanism the authoritative sources can support. Do not equate the logical boundary with a mandate for a new platform.</p>
+<h2>10. Trade-off Analysis</h2>
+<ul>
+<li>Reproducibility versus sensitive-data duplication.</li>
+<li>Fail-closed correctness versus availability and manual-review load.</li>
+<li>Structure preservation versus parser and validation complexity.</li>
+<li>Automatic activation speed versus accountable human control.</li>
+<li>Immutable history versus storage, retention, and deletion obligations.</li>
+<li>Narrow impact analysis versus the risk of missing affected answers.</li>
+</ul>
+<h2>11. Cost Model</h2>
+<p>Exact HealthSure costs are unknown. Relevant variables include:</p>
+<ul>
+<li>source integration and export;</li>
+<li>original and derived storage;</li>
+<li>parsing/OCR and validation;</li>
+<li>manifest and resolver engineering;</li>
+<li>human classification, approval, and review;</li>
+<li>reprocessing after parser or metadata changes;</li>
+<li>lineage, audit, access control, monitoring, and incidents;</li>
+<li>remediation of retroactively affected answers.</li>
+</ul>
+<p>The dominant cost may be review and remediation rather than compute. Measure cost per eligible, correct, reproducible answer—not ingestion cost alone.</p>
+<h2>12. Operational Concerns</h2>
+<ul>
+<li>Assign ownership separately for source authority, ingestion, parsing, validation, package administration, policy approval, applicability, authorization, and serving.</li>
+<li>Monitor source changes, validation failures, incomplete packages, activation backlog, suspension scope, replay backlog, and manual fallback.</li>
+<li>Roll out parser changes as governed migrations with immutable candidates, comparison, atomic activation, and rollback.</li>
+<li>Suspend identifiable affected representations when a material defect is known; fail closed more broadly when the affected scope cannot be established.</li>
+<li>Retain reconciliation even if future events are introduced because events can be missed, duplicated, delayed, or reordered.</li>
+</ul>
+<h2>13. Security, Privacy, and Governance</h2>
+<ul>
+<li>Enforce least privilege for originals, parsed content, restricted audit evidence, and token vaults.</li>
+<li>Separate operational telemetry from restricted evidence and re-identification mappings.</li>
+<li>Retain only member/claim fields that materially influenced applicability, authorization, evidence, or the answer.</li>
+<li>Record protected historical source identity, version/timestamp, schema, checksum, and authorization evidence where required.</li>
+<li>Keep retention periods, legal-hold behavior, deletion, and separation-of-duties requirements open until accountable HealthSure owners define them.</li>
+</ul>
+<h2>14. Evaluation and Evidence</h2>
+<p>Validate on actual HealthSure documents when available:</p>
+<ul>
+<li>structure and relationship preservation;</li>
+<li>table/header and footnote association;</li>
+<li>package completeness and precedence;</li>
+<li>version and effective-date resolution;</li>
+<li>immutable historical retrieval and checksum verification;</li>
+<li>dependency invalidation and atomic activation;</li>
+<li>retroactive impact analysis using resolver lineage;</li>
+<li>authorization and sensitive-evidence handling;</li>
+<li>manual and shadow-automation outcomes;</li>
+<li>rollback, suspension, abstention, and fallback behavior.</li>
+</ul>
+<p>Parser confidence is diagnostic evidence, not business correctness. Acceptance criteria remain open.</p>
+<h2>15. Final Recommendation</h2>
+<blockquote>Under the current assumptions and constraints, HealthSure should use a version-aware, structure-aware policy representation with immutable source and metadata identities, deterministic package-completeness and applicability gates, explicit approval and eligibility states, atomic activation, dependency-based invalidation, and exact answer-to-evidence and resolver lineage. It should rely on authoritative-source originals only when immutable historical retrieval and integrity are guaranteed; otherwise it should retain a governed copy. It should begin with manual activation and shadow automation, using automatic activation only for narrowly approved routine cases after evidence justifies it. We accept additional validation, lineage, review, and abstention obligations to reduce wrong-version, incomplete-package, structural-corruption, and irreproducibility risks. We would revisit the design when real source guarantees, policy semantics, document structures, freshness requirements, authorization boundaries, scale, review capacity, and evaluation evidence are available.</blockquote>
+<p>This recommendation and ADR-0003 are Proposed. No production architecture is accepted.</p>
+<h2>16. What Would Change the Recommendation?</h2>
+<ul>
+<li>authoritative sources proving or failing immutable historical retrieval and integrity;</li>
+<li>verified policy version, correction, withdrawal, amendment, and precedence semantics;</li>
+<li>actual document structures and parser-validation evidence;</li>
+<li>business-approved freshness, retention, authorization, and review requirements;</li>
+<li>source latency, availability, capacity, and export evidence;</li>
+<li>measured manual-review load and shadow-automation quality;</li>
+<li>scale or incident evidence that changes the simplest viable implementation.</li>
+</ul>
+<h2>17. HealthSure Case-Study Update</h2>
+<p>Day 3 proposes a logical ingestion and eligibility boundary; it does not deploy a registry, parser, store, event system, or automated approval process. HealthSure now distinguishes source authority from derived-representation validation and records the need for content plus resolver lineage. See the <a href="../../../case-studies/healthsure/day03-document-ingestion-update.md">Day 3 case-study update</a>.</p>
+<h2>18. Architect&#39;s Challenge</h2>
+<p>See <a href="architects-challenge.md">Architect&#39;s Challenge</a>: address a retroactive applicability correction, incomplete new package, historical answers, source constraints, and an effective-date boundary without assuming a single correct implementation.</p>
+<h2>19. Architect&#39;s Reflection</h2>
+<p>The learner remains least comfortable approving automatic activation without evidence. Parser confidence, partial publication, metadata corrections, resolver lineage, and proportionate pilot separation of duties became central concerns. See the <a href="../../../architect-journal/week01-day03-reflection.md">Day 3 reflection</a>.</p>
+<h2>Architecture Reasoning Journal</h2>
+<h3>Decision Point 1 — Correctness dimensions</h3>
+<p><strong>Mentor question:</strong> What minimum information must HealthSure preserve to prove why a policy document or package was supplied for a service date?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> All five dimensions are required: identity, time, authority, completeness, and reproducibility.</p>
+<p><strong>Challenge:</strong> These are requirements, not proof that every possible ingestion component is needed. A version-aware registry or sufficiently capable authoritative source could satisfy them.</p>
+<p><strong>Refined reasoning:</strong> Preserve stable policy/source identities, business-effective and system-observed time, authority and approval, package relationships, immutable version/checksum, parser version, validation, and lineage. Exact HealthSure fields remain open.</p>
+<p><strong>Principle learned:</strong> A document is not trustworthy AI evidence merely because its text was extracted.</p>
+<p><strong>Change trigger:</strong> Confirmed HealthSure source and policy semantics.</p>
+<h3>Decision Point 2 — Preserve originals or references</h3>
+<p><strong>Mentor question:</strong> Store every immutable source artifact, or retain metadata and parsed representations while retrieving originals from the source?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Store metadata and parsed representation with complete lineage, retrieving the original from its source.</p>
+<p><strong>Challenge:</strong> Lineage cannot reproduce an object that was overwritten, deleted, mutated, or cannot be retrieved historically.</p>
+<p><strong>Refined reasoning:</strong> Use references only when the source guarantees immutable, version-addressable, checksum-verifiable historical retrieval for the required period. Otherwise preserve a governed immutable copy.</p>
+<p><strong>Principle learned:</strong> A pointer is not evidence unless the referenced object is immutable and durably retrievable.</p>
+<p><strong>Change trigger:</strong> Source retention, integrity, legal-hold, availability, authorization, and export evidence.</p>
+<h3>Decision Point 3 — Structure-aware parsing and handwritten annotations</h3>
+<p><strong>Mentor question:</strong> Produce plain text, a structure-aware representation, or both; and how should handwriting be handled?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Use a structure-aware representation and first determine the content and authority of handwritten annotations.</p>
+<p><strong>Challenge:</strong> Handwriting is neither automatically irrelevant nor governing; extraction can preserve words while destroying table, footnote, section, or page relationships.</p>
+<p><strong>Refined reasoning:</strong> Preserve semantic and positional relationships. Quarantine ambiguous annotations until an accountable owner classifies them; retain for audit when required without making them answer-eligible.</p>
+<p><strong>Principle learned:</strong> Parsing preserves business meaning, not merely characters. Retention and eligibility are separate.</p>
+<p><strong>Change trigger:</strong> Actual corpus structures and accountable content classification.</p>
+<h3>Decision Point 4 — Parser uncertainty and package failure</h3>
+<p><strong>Hypothetical scenario:</strong> Paragraphs parse, but a coverage-table boundary and footnote target are uncertain and an approval page has low OCR confidence.</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Reject the entire document version because confidence is not business correctness and partial publication can destroy correlations.</p>
+<p><strong>Challenge:</strong> Requiring perfect extraction of decorative or preclassified non-governing content may unnecessarily reduce availability.</p>
+<p><strong>Refined reasoning:</strong> Fail closed for required, authoritative, meaning-bearing content or relationships. Define completeness through an authoritative versioned manifest. Exclude non-required objects only under preapproved rules.</p>
+<p><strong>Principle learned:</strong> Parser confidence is diagnostic evidence; component validity does not prove package completeness; accountable owners define materiality.</p>
+<p><strong>Change trigger:</strong> Approved manifest and materiality rules validated against actual documents.</p>
+<h3>Decision Point 5 — Validation, approval, applicability, and eligibility</h3>
+<p><strong>Mentor question:</strong> What do successful parsing and technical validation mean, and when may an artifact influence an answer?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Store technically validated versions but require policy-domain approval before answer eligibility.</p>
+<p><strong>Challenge:</strong> A technically perfect draft may still be non-governing, and successful parsing needs explicit versioned rules.</p>
+<p><strong>Refined reasoning:</strong> Keep <code>PARSED</code>, <code>TECHNICALLY_VALIDATED</code>, <code>BUSINESS_APPROVED</code>, <code>APPLICABLE</code>, and <code>ELIGIBLE</code> as separate evidence-bearing states. Initial activation requires policy-domain approval.</p>
+<p><strong>Principle learned:</strong> Technical correctness does not establish governing authority or business applicability.</p>
+<p><strong>Change trigger:</strong> Mature evidence for narrowly preapproved activation rules.</p>
+<h3>Decision Point 6 — Dependency-based invalidation</h3>
+<p><strong>Mentor question:</strong> What must be revisited when an upstream representation changes?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Downstream steps depending on the change must be revisited; parser changes affect validation and approval/eligibility.</p>
+<p><strong>Challenge:</strong> A parser change need not revoke business approval of the original source.</p>
+<p><strong>Refined reasoning:</strong> Separate source approval from derived validation. New representations lose inherited technical validation and eligibility while source authority can remain intact. Reference exact immutable upstream versions.</p>
+<p><strong>Principle learned:</strong> A parser upgrade is a governed data migration, not merely a library update.</p>
+<p><strong>Change trigger:</strong> Verified dependency graph and change-impact rules.</p>
+<h3>Decision Point 7 — Parser upgrade rollout</h3>
+<p><strong>Hypothetical scenario:</strong> A parser upgrade affects many validated representations.</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Keep existing validated representations active while new candidates are built and validated unless a material old-parser defect is known.</p>
+<p><strong>Challenge:</strong> Existing output is not proven valid forever; known defects can require suspension.</p>
+<p><strong>Refined reasoning:</strong> Create immutable candidates, compare meaning-bearing structure, activate atomically after validation and approval, preserve old history, and suspend identifiable affected scope for material defects. Fail closed more broadly if scope is unknowable.</p>
+<p><strong>Principle learned:</strong> Normally only one representation is active per source version and serving scope, with explicit migration and rollback.</p>
+<p><strong>Change trigger:</strong> Defect materiality, affected-scope evidence, and candidate validation.</p>
+<h3>Decision Point 8 — Detecting source changes and freshness</h3>
+<p><strong>Mentor question:</strong> Poll, read directly, or introduce change events?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Identify change signals and acceptable freshness; use batch polling for bounded staleness, or direct access when source latency and permission boundaries permit.</p>
+<p><strong>Challenge:</strong> Changes include metadata, approval, package, authority, authorization, retention, and source behavior—not bytes alone.</p>
+<p><strong>Refined reasoning:</strong> Evaluate direct authoritative access first; otherwise use scheduled polling and a version-aware registry with cadence derived from approved freshness. Do not add real-time events without evidence, and retain reconciliation if events arrive later.</p>
+<p><strong>Principle learned:</strong> Freshness is the full detection-to-activation path.</p>
+<p><strong>Change trigger:</strong> Business-approved freshness plus source latency, capacity, availability, and change evidence.</p>
+<h3>Decision Point 9 — Automatic versus manual activation</h3>
+<p><strong>Mentor question:</strong> Which updates may activate without direct human action?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Use a hybrid model with owners deciding automatic and manual cases within their boundaries.</p>
+<p><strong>Challenge:</strong> HealthSure lacks a verified change taxonomy and complete policy semantics, so automatic activation is unsafe.</p>
+<p><strong>Refined reasoning:</strong> Start manual, then shadow recommendations, narrow automatic activation under preapproved rules, and expand only after measured evidence. Each owner certifies only their boundary.</p>
+<p><strong>Principle learned:</strong> Automatic activation is not automatic business approval.</p>
+<p><strong>Change trigger:</strong> Confirmed semantics, shadow evidence, rollback, named owners, fallback capacity, and approved criteria.</p>
+<h3>Decision Point 10 — Atomic package activation</h3>
+<p><strong>Hypothetical scenario:</strong> A base policy, amendments, and required attachments form a package, but one new attachment remains under review.</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Keep the existing complete package active.</p>
+<p><strong>Challenge:</strong> A complete old package becomes wrong when its applicability interval ends.</p>
+<p><strong>Refined reasoning:</strong> Activate required components atomically. Keep the old package only where still applicable. If the new effective date arrives before completeness, abstain for the affected scope and use an approved manual fallback.</p>
+<p><strong>Principle learned:</strong> A previous version is a valid fallback only while applicability rules make it valid.</p>
+<p><strong>Change trigger:</strong> Verified applicability intervals, complete manifest, and fallback capacity.</p>
+<h3>Decision Point 11 — Retroactive amendments and historical answers</h3>
+<p><strong>Mentor question:</strong> What happens when a retroactive amendment changes historical applicability?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Use it for future queries and rerun queries that used the prior version.</p>
+<p><strong>Challenge:</strong> Future execution can ask about historical dates, and blindly rerunning every old answer is unnecessarily broad.</p>
+<p><strong>Refined reasoning:</strong> Identify the smallest defensible scope using package, dates, product/jurisdiction, relevant dimensions, affected provisions, dependencies, question category, and exact evidence. Reconstruct and compare before routing material differences for remediation; preserve both histories.</p>
+<p><strong>Principle learned:</strong> Lineage supports impact analysis and remediation, not only audit.</p>
+<p><strong>Change trigger:</strong> Confirmed retroactive scope and materiality rules.</p>
+<h3>Decision Point 12 — Replay and audit evidence</h3>
+<p><strong>Mentor question:</strong> What must be retained to investigate or reconstruct an answer?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Retain everything required to reconstruct the answer.</p>
+<p><strong>Challenge:</strong> Indefinite duplication of prompts and sensitive data creates another high-risk system.</p>
+<p><strong>Refined reasoning:</strong> Retain a governed execution envelope containing applicability and authorization inputs, exact package/representation identities, resolver/manifest/parser/validation/configuration versions, prompt/model configuration, justified evidence, answer/citations, fallback, and remediation history.</p>
+<p><strong>Principle learned:</strong> Reproduce decision inputs and investigate outcomes; do not promise identical generated wording.</p>
+<p><strong>Change trigger:</strong> Approved retention, deletion, legal-hold, and audit requirements.</p>
+<h3>Decision Point 13 — Member-specific data retention</h3>
+<p><strong>Mentor question:</strong> How should member/claim context be retained without creating an unnecessary sensitive copy?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Retain tokenized or redacted prompts with protected references to authoritative claim records.</p>
+<p><strong>Challenge:</strong> A mutable claim ID alone cannot reconstruct historical state.</p>
+<p><strong>Refined reasoning:</strong> Reference protected exact historical state with version/timestamp, schema, checksum, and authorization evidence. Store a minimal governed snapshot only when the source cannot reproduce required fields; separate telemetry, restricted evidence, and token mapping.</p>
+<p><strong>Principle learned:</strong> Retain only sensitive fields that materially influenced the decision boundary.</p>
+<p><strong>Change trigger:</strong> Historical source reproducibility and approved evidence-retention requirements.</p>
+<h3>Decision Point 14 — Effective-date correction without content change</h3>
+<p><strong>Hypothetical scenario:</strong> An amendment&#39;s effective date is corrected to cover additional historical months while its bytes remain unchanged.</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Treat it as metadata-only and use lineage for impact analysis.</p>
+<p><strong>Challenge:</strong> Answers that should have used the amendment may not appear in content lineage precisely because the old metadata excluded it.</p>
+<p><strong>Refined reasoning:</strong> Create immutable metadata history, reuse valid content validation, revalidate authority when needed, recalculate applicability/eligibility, rerun historical resolution, compare packages, and investigate the corrected business scope.</p>
+<p><strong>Principle learned:</strong> Content lineage shows what influenced an answer; resolver lineage shows what should have influenced it.</p>
+<p><strong>Change trigger:</strong> Confirmed correction semantics and historical resolver inputs.</p>
+<h3>Decision Point 15 — Control simplification</h3>
+<p><strong>Mentor question:</strong> Which control is hardest to approve, and what can be simplified without weakening pilot correctness?</p>
+<p><strong>Learner&#39;s initial reasoning:</strong> Automatic activation is least comfortable without evidence.</p>
+<p><strong>Challenge:</strong> Full separation of duties for every routine pilot update may add process without demonstrated value.</p>
+<p><strong>Refined reasoning:</strong> During a controlled pilot, one accountable policy owner may approve and activate routine fully validated packages; high-risk exceptions require a second independent reviewer. Production separation-of-duties remains open.</p>
+<p><strong>Principle learned:</strong> Governance should be proportionate to evidence and risk, not ceremonial.</p>
+<p><strong>Change trigger:</strong> HealthSure governance requirements, change taxonomy, review outcomes, and incident evidence.</p>
+<h2>Next Lesson</h2>
+<p>Day 4 — Chunking as an Architectural Decision</p>
+<blockquote>How should retrieval units reflect the structure of knowledge and the questions users actually ask?</blockquote>
+<hr>
+<p><strong>Navigation:</strong> <a href="../day02-long-context-vs-retrieval/README.md">Previous: Day 2</a> · <a href="../README.md">Week 1 overview</a> · Next: Day 4 — Chunking as an Architectural Decision</p>
+</main></body>
+</html>
