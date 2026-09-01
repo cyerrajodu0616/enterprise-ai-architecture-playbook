@@ -195,6 +195,7 @@ Artifacts record reasoning actually developed during the lesson, not generic tut
 
 Whenever a new HTML tutorial or lesson is added:
 
+- complete the root-index update before the end-of-day session handoff; a day's tutorial work is not complete until its index entry and link have been verified;
 - add it to the repository-root `index.html` in the same change, using a descriptive title and a direct relative link to the tutorial's `index.html`;
 - if the root `index.html` does not yet exist, create it as part of that same change rather than leaving the tutorial undiscoverable;
 - include `<meta name="viewport" content="width=device-width, initial-scale=1">` and responsive styling that prevents horizontal page overflow at phone and tablet widths;
